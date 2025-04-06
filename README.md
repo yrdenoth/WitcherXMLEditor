@@ -74,8 +74,5 @@ If you like my work, you can support me at:
 *   Created by **Gerwant**.
 *   Nexus Mods: [https://next.nexusmods.com/profile/gerwant30](https://next.nexusmods.com/profile/gerwant30)
 *   YouTube: [https://www.youtube.com/@TalesoftheWitcher](https://www.youtube.com/@TalesoftheWitcher)
-*   If you like my work, you can support me at:<br>
-        <a href="https://ko-fi.com/gerwant_totw">Ko-fi</a><br>
-        <a href="https://www.patreon.com/TalesofTheWitcher">Patreon</a><br>
 
 ---
