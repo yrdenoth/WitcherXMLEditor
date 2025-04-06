@@ -59,10 +59,23 @@ This program is a GUI editor for fast viewing and modifying XML files containing
 12. **Important:** After saving your changes in this editor, you need to create your mod package. Load the edited `.xml` file(s) into your preferred Witcher 3 modding tool (**REDkit** or **WolvenKit**) and follow the standard procedure to build and pack your mod. This editor only modifies the XML definitions; it does not create the final mod package.
 
 
+## Support Me
+
+If you like my work, you can support me at:
+
+*   <a href="https://ko-fi.com/gerwant_totw">Ko-fi</a>
+*   <a href="https://www.patreon.com/TalesofTheWitcher">Patreon</a>
+
+---
+
+
 ## Author & Credits
 
 *   Created by **Gerwant**.
 *   Nexus Mods: [https://next.nexusmods.com/profile/gerwant30](https://next.nexusmods.com/profile/gerwant30)
 *   YouTube: [https://www.youtube.com/@TalesoftheWitcher](https://www.youtube.com/@TalesoftheWitcher)
+*   If you like my work, you can support me at:<br>
+        <a href="https://ko-fi.com/gerwant_totw">Ko-fi</a><br>
+        <a href="https://www.patreon.com/TalesofTheWitcher">Patreon</a><br>
 
 ---
