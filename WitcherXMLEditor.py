@@ -5,14 +5,16 @@ import configparser
 import logging
 from pathlib import Path
 from lxml import etree as ET
+import subprocess # <-- ADDED IMPORT
+import sys  
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFrame,
     QSplitter, QTabWidget, QListWidget, QListWidgetItem, QLineEdit,
     QPushButton, QLabel, QScrollArea, QSizePolicy, QSpacerItem, QGridLayout,
-    QFileDialog, QMessageBox, QInputDialog, QCompleter, QMenuBar, QStatusBar, QDialog,
+    QFileDialog, QMessageBox, QInputDialog, QCompleter, QMenuBar, QStatusBar, QDialog, QMenu 
 )
-from PySide6.QtCore import QMargins, Qt, QStringListModel, Signal
+from PySide6.QtCore import QMargins, Qt, QStringListModel, Signal, QPoint 
 from PySide6.QtGui import QAction, QPalette, QColor, QShortcut, QKeySequence, QIcon
 
 # --- Constants ---
@@ -52,7 +54,7 @@ class PropertyWidget(QWidget):
         # --- 1. Property Name Label ---
         self.name_label = QLabel(f"{element.tag}:")
         self.name_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
-        self.name_label.setFixedWidth(150) # Fixed width for alignment
+        self.name_label.setFixedWidth(160) # Fixed width for alignment
         self.main_layout.addWidget(self.name_label)
 
         # --- 2. Container and Layout for Attributes ---
@@ -195,7 +197,7 @@ class WitcherXMLEditor(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Witcher 3 XML Editor v1.0 Optimized")
+        self.setWindowTitle("Witcher 3 XML Editor v1.0")
         self._setup_icon()
 
         self.setGeometry(100, 100, 1200, 800)
@@ -281,6 +283,7 @@ class WitcherXMLEditor(QMainWindow):
         # --- Initialize UI and Connect Signals ---
         self._init_ui()
         self._connect_signals()
+        self._connect_context_menu_signals() # <-- ADDED: Connect context menu signals separately
         self._setup_shortcuts() # Setup keyboard shortcuts
 
         # --- Status Bar ---
@@ -386,6 +389,9 @@ class WitcherXMLEditor(QMainWindow):
         self.ability_filter.setPlaceholderText("Filter abilities by name...")
         self.ability_list = QListWidget()
         self.ability_list.setObjectName("AbilityList")
+         # ---- vvv ADDED vvv ----
+        self.ability_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # ---- ^^^ ADDED ^^^ ----
         ability_layout.addWidget(self.ability_filter)
         ability_layout.addWidget(self.ability_list)
         self.tab_widget.addTab(self.ability_tab, "Abilities")
@@ -397,6 +403,9 @@ class WitcherXMLEditor(QMainWindow):
         self.item_filter.setPlaceholderText("Filter items by name...")
         self.item_list = QListWidget()
         self.item_list.setObjectName("ItemList")
+        # ---- vvv ADDED vvv ----
+        self.item_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # ---- ^^^ ADDED ^^^ ----
         item_layout.addWidget(self.item_filter)
         item_layout.addWidget(self.item_list)
         self.tab_widget.addTab(self.item_tab, "Items")
@@ -598,6 +607,94 @@ class WitcherXMLEditor(QMainWindow):
         # are connected when those widgets are created (e.g., in populate_*, add_* methods)
 
         logging.debug("Signal connections complete.")
+        
+    def _connect_context_menu_signals(self):
+        """Connects signals for custom context menus."""
+        logging.debug("Connecting context menu signals...")
+        self.ability_list.customContextMenuRequested.connect(
+            lambda pos: self._show_list_context_menu(self.ability_list, pos)
+        )
+        self.item_list.customContextMenuRequested.connect(
+            lambda pos: self._show_list_context_menu(self.item_list, pos)
+        )
+        logging.debug("Context menu signal connections complete.")
+
+# --- Context Menu Handling ---
+
+    def _show_list_context_menu(self, list_widget: QListWidget, pos: QPoint):
+        """Creates and displays a context menu for the ability/item lists."""
+        item = list_widget.itemAt(pos)
+        # Only show menu if clicking on an item that matches the current selection
+        if item is None or item.text() != self.current_selection_name:
+            logging.debug("Context menu requested but not on the currently selected item, ignoring.")
+            # Optionally show a default menu or no menu
+            return
+
+        if not self.current_selection_filepath:
+             logging.debug("Context menu requested, but no valid file path associated with selection.")
+             return
+
+        menu = QMenu(self)
+        open_action = QAction(QIcon.fromTheme("folder-open"), "Open File Location", self)
+        open_action.setToolTip(f"Show '{os.path.basename(self.current_selection_filepath)}' in the file explorer")
+        open_action.triggered.connect(self._open_current_file_location)
+
+        # Ensure the file actually exists before enabling the action
+        is_enabled = False
+        try:
+            is_enabled = Path(self.current_selection_filepath).is_file()
+        except Exception:
+            pass # Ignore errors checking path, action will remain disabled
+        open_action.setEnabled(is_enabled)
+
+        menu.addAction(open_action)
+        # Add other actions here if needed in the future (e.g., copy name, etc.)
+
+        # Show the menu at the cursor position
+        global_pos = list_widget.mapToGlobal(pos)
+        menu.exec(global_pos)
+
+    def _open_current_file_location(self):
+        """Opens the system file explorer to the location of the current file."""
+        if not self.current_selection_filepath:
+            logging.warning("Attempted to open file location, but no file is selected.")
+            return
+
+        file_path_str = self.current_selection_filepath
+        file_path = Path(file_path_str)
+
+        logging.info(f"Attempting to open file location for: {file_path_str}")
+
+        if not file_path.is_file():
+            logging.error(f"Cannot open file location: File does not exist at '{file_path_str}'.")
+            QMessageBox.warning(self, "File Not Found", f"The file could not be found at the expected location:\n{file_path_str}")
+            return
+
+        try:
+            if sys.platform == "win32":
+                # Use explorer /select to highlight the file
+                cmd = ['explorer', '/select,', str(file_path)]
+                logging.debug(f"Executing command: {cmd}")
+                subprocess.Popen(cmd)
+            elif sys.platform == "darwin": # macOS
+                # Use open -R to reveal the file in Finder
+                cmd = ['open', '-R', str(file_path)]
+                logging.debug(f"Executing command: {cmd}")
+                subprocess.Popen(cmd)
+            else: # Linux and other Unix-like
+                # Best cross-DE approach is to open the containing directory
+                parent_dir = file_path.parent
+                cmd = ['xdg-open', str(parent_dir)]
+                logging.debug(f"Executing command: {cmd}")
+                subprocess.Popen(cmd)
+            logging.info(f"Successfully requested file explorer for: {file_path_str}")
+        except FileNotFoundError:
+             logging.error(f"Could not execute file explorer command. Is the command (explorer/open/xdg-open) in your PATH?", exc_info=True)
+             QMessageBox.critical(self, "Error", "Could not find the necessary command to open the file explorer.\nPlease ensure it's installed and in your system's PATH.")
+        except Exception as e:
+            logging.error(f"Failed to open file location '{file_path_str}': {e}", exc_info=True)
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred while trying to open the file location:\n{e}")
+
 
     def _setup_shortcuts(self):
         """Sets up global keyboard shortcuts."""
@@ -610,22 +707,27 @@ class WitcherXMLEditor(QMainWindow):
 
     def show_author_info(self):
         """Displays an information box about the author."""
-        author_text = """Witcher 3 XML Editor v1.0 (Optimized)
--------------------------------------
-Created by Gerwant. Thank you for using this tool.
+        author_text = """<b>Witcher 3 XML Editor v1.0</b><br>
+        -------------------------------------<br>
+        Created by Gerwant. Thank you for using this tool.<br><br>
+        Feel free to visit:<br>
+        <a href="https://next.nexusmods.com/profile/gerwant30">Nexus Mods</a><br>
+        <a href="https://www.youtube.com/@TalesoftheWitcher">YouTube</a><br><br>
+        
+        If you like my work, you can support me at:<br>
+        <a href="https://ko-fi.com/gerwant_totw">Ko-fi</a><br>
+        <a href="https://www.patreon.com/TalesofTheWitcher">Patreon</a><br>
+        Cheers!"""
 
-Feel free to visit:
-Nexus Mods: https://next.nexusmods.com/profile/gerwant30
-YouTube: https://www.youtube.com/@TalesoftheWitcher
-
-Cheers!"""
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("About Witcher 3 XML Editor")
         msg_box.setIcon(QMessageBox.Icon.Information)
-        msg_box.setTextFormat(Qt.TextFormat.PlainText) # Use PlainText
+        msg_box.setTextFormat(Qt.TextFormat.RichText)  # Użyj RichText
+        msg_box.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction | 
+            Qt.TextInteractionFlag.LinksAccessibleByMouse
+        )
         msg_box.setText(author_text)
-        # Make links selectable
-        msg_box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
         msg_box.exec()
 
     # --- Configuration Handling ---
@@ -1269,7 +1371,7 @@ Cheers!"""
 
     def update_window_title(self):
         """Updates the main window title based on selection and modification status."""
-        base_title = "Witcher 3 XML Editor v1.0 Optimized"
+        base_title = "Witcher 3 XML Editor v1.0"
         title = base_title
         asterisk = ""
         plus = ""
