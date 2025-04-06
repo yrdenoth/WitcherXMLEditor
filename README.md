@@ -2,7 +2,7 @@
 
 This program is a GUI editor for fast viewing and modifying XML files containing definitions for skills (abilities) and items from The Witcher 3: Wild Hunt.
 
-![Screenshot of Witcher 3 XML Editor](placeholder_screenshot.png)
+![Screenshot of Witcher 3 XML Editor](1.png)
 *(You should replace `placeholder_screenshot.png` with an actual URL to a screenshot of your application)*
 
 ---
