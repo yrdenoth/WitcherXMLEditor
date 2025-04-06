@@ -34,6 +34,12 @@ This program is a GUI editor for fast viewing and modifying XML files containing
 
 ---
 
+## Known Issues
+
+*   Need to fix exception handling for when the program tries to load files from item_plus DLC and from rewards.xml. Temporarily, it is best to narrow the search for the folder with the .xml files to e.g. abilites, items etc.
+
+---
+
 ## Requirements
 
 *   Windows Operating System (for the executable version).
