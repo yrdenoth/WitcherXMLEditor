@@ -36,7 +36,7 @@ This program is a GUI editor for fast viewing and modifying XML files containing
 
 ## Known Issues
 
-*   Need to fix exception handling for when the program tries to load files from item_plus DLC and from rewards.xml. Temporarily, it is best to narrow the search for the folder with the .xml files to e.g. abilites, items etc.
+*   Need to fix exception handling for when the program tries to load duplicate ability/item names in different xml files (e.g. DLC or item_plus). Temporarily, it is best to narrow the search for the folder with the .xml files to e.g. abilites, items etc.
 
 ---
 
@@ -52,7 +52,6 @@ This program is a GUI editor for fast viewing and modifying XML files containing
 
 1.  Launch the program (`WitcherXMLEditor.exe`).
 2.  Use the **File -> Open Folder...** menu to select the folder containing the XML files you wish to edit.
-    *   *(Note: I include unpacked base game .xml files in the program package. You can use them by pointing the editor to the `xml_uncooked` folder included with the editor.)*
 3.  Select the **Abilities** or **Items** tab on the left.
 4.  Use the **Filter...** box or scroll the list to find the entry you want to modify. Click on it.
 5.  The details for the selected entry will appear in the right-hand pane.
